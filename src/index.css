@@ -1,13 +1,24 @@
+/* These three @tailwind directives are required for Tailwind to work. */
+/* They are replaced at build time with the actual generated CSS. */
+/* stylelint-disable at-rule-no-unknown */
+@tailwind base;        /* Resets browser default styles */
+@tailwind components;  /* Tailwind component classes */
+@tailwind utilities;   /* All utility classes e.g. flex, p-4, text-lg */
+/* stylelint-enable at-rule-no-unknown */
+
+/* Global custom styles that apply across the whole application */
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #F8F9FC;
+  color: #111111;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+/* Smooth scroll behaviour for anchor link navigation */
+html { scroll-behavior: smooth; }
+
+/* Custom scrollbar styling for the filter sidebar */
+.custom-scroll::-webkit-scrollbar { width: 6px; }
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #D0D7E3;
+  border-radius: 3px;
 }
