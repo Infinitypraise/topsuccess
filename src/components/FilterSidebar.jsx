@@ -10,6 +10,7 @@ export default function FilterSidebar({
   selectedCategories, onCategoryChange,
   selectedBrands,     onBrandChange,
   priceRange,         onPriceChange,
+  maxPrice,
 }) {
   return (
     <aside className='w-full lg:w-52 flex-shrink-0'>
@@ -67,7 +68,7 @@ export default function FilterSidebar({
             Up to &#8358;{priceRange[1].toLocaleString()}
           </p>
           {/* Single-handle slider for max price */}
-          <input type='range' min={0} max={1000000} step={10000}
+          <input type='range' min={0} max={maxPrice ?? 1000000} step={10000}
             value={priceRange[1]}
             onChange={e => onPriceChange([0, parseInt(e.target.value, 10)])}
             className='w-full accent-blue-700'
@@ -75,7 +76,7 @@ export default function FilterSidebar({
           />
           <div className='flex justify-between text-xs text-gray-400 mt-1'>
             <span>&#8358;0</span>
-            <span>&#8358;1M+</span>
+            <span>&#8358;{(maxPrice ?? 1000000).toLocaleString()}</span>
           </div>
         </div>
 
@@ -84,7 +85,7 @@ export default function FilterSidebar({
           onClick={() => {
             onCategoryChange([]);
             onBrandChange([]);
-            onPriceChange([0, 1000000]);
+            onPriceChange([0, maxPrice ?? 1000000]);
           }}
           className='mt-5 w-full text-xs text-red-700 hover:underline text-center py-1'
         >

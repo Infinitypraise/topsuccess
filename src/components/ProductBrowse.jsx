@@ -14,10 +14,11 @@ export default function ProductBrowse() {
   const { scoredProducts, products } = useRecommendation();
 
   const baseProducts = scoredProducts.length > 0 ? scoredProducts : products;
+  const maxProductPrice = Math.max(0, ...products.map(p => p.price));
 
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedBrands,     setSelectedBrands]     = useState([]);
-  const [priceRange,         setPriceRange]         = useState([0, 1000000]);
+  const [priceRange,         setPriceRange]         = useState([0, maxProductPrice]);
   const [sortOrder,          setSortOrder]          = useState('relevance');
   const [searchQuery,        setSearchQuery]        = useState('');
   const [showFilters,        setShowFilters]        = useState(false);
@@ -101,6 +102,7 @@ export default function ProductBrowse() {
             onBrandChange={setSelectedBrands}
             priceRange={priceRange}
             onPriceChange={setPriceRange}
+            maxPrice={maxProductPrice}
           />
         </div>
 
@@ -132,7 +134,7 @@ export default function ProductBrowse() {
                 onClick={() => {
                   setSelectedCategories([]);
                   setSelectedBrands([]);
-                  setPriceRange([0, 1000000]);
+                  setPriceRange([0, maxProductPrice]);
                   setSearchQuery('');
                 }}
                 className='text-red-700 hover:underline text-sm'
