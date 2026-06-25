@@ -8,6 +8,7 @@ const CATEGORIES = ['smartphone', 'laptop', 'audio', 'tv', 'accessory'];
 const BRANDS = [
   'Samsung', 'Apple', 'HP', 'Dell', 'Lenovo',
   'Sony', 'JBL', 'Tecno', 'Itel', 'Anker', 'LG', 'TCL',
+  'OnePlus', 'Google', 'Oppo', 'Xiaomi',
 ];
 
 const DEFAULT_PREFS = {

@@ -61,19 +61,20 @@ export function clearPreferences() {
 /**
  * Converts a user preference object into a numeric vector for cosine similarity.
  *
- * The vector has exactly 7 elements, one per attribute dimension, in this order:
+ * The vector has exactly 8 elements, one per attribute dimension plus a
+ * category-match signal, in this order:
  * [priceTier, batteryScore, displayScore, processorTier,
- *  connectivityScore, portabilityScore, valueTier]
+ *  connectivityScore, portabilityScore, valueTier, categoryMatch]
  *
- * Each value is multiplied by its corresponding weight from attributeWeights.
- * A weight of 1.0 leaves the value unchanged.
- * A weight of 2.0 doubles the attribute's influence on similarity scores.
+ * Each attribute value is multiplied by its corresponding weight from
+ * attributeWeights. The final category dimension uses categoryWeight so the
+ * selected shopping category contributes directly to the similarity score.
  *
  * IMPORTANT: This order must exactly match buildProductVector() in
  * recommendationEngine.js — if they differ, similarity scores are meaningless.
  *
  * @param {Object} prefs - User preference object from localStorage
- * @returns {number[]} Weighted preference vector of length 7
+ * @returns {number[]} Weighted preference vector of length 8
  */
 export function buildPreferenceVector(prefs) {
   // The seven attribute dimensions, in the canonical order
@@ -87,11 +88,16 @@ export function buildPreferenceVector(prefs) {
     'valueTier',
   ];
 
-  return ATTR_KEYS.map(attr => {
+  const vector = ATTR_KEYS.map(attr => {
     // Fallback to 0 if the attribute is missing (defensive coding)
-    const value  = prefs[attr]  ?? 0;
+    const value  = prefs?.[attr] ?? 0;
     // Fallback to 1.0 (neutral weight) if weights are not set
-    const weight = prefs.attributeWeights?.[attr] ?? 1.0;
+    const weight = prefs?.attributeWeights?.[attr] ?? 1.0;
     return value * weight;
   });
+
+  const categoryWeight = prefs?.categoryWeight ?? 2.0;
+  const categoryMatch  = prefs?.preferredCategory ? categoryWeight : 0;
+
+  return [...vector, categoryMatch];
 }

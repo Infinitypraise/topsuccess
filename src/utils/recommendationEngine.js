@@ -61,7 +61,7 @@ export function cosineSimilarity(vecA, vecB) {
 // ══════════════════════════════════════════════════════════════════════════
 
 /**
- * Extracts the 7 numeric attribute values from a product object
+ * Extracts the 8 numeric attribute values from a product object
  * and returns them as a vector in the canonical attribute order.
  *
  * CRITICAL: The attribute order here MUST match the order in
@@ -70,11 +70,16 @@ export function cosineSimilarity(vecA, vecB) {
  *
  * priceTier (1-5) and processorTier (1-5) are divided by 5 to normalise
  * them to the [0, 1] range, matching the scale of all other attributes.
+ * The final dimension is a category-match signal, which is 0 unless the
+ * product category matches the user-selected category.
  *
  * @param {Object} product - A product object from products.js
- * @returns {number[]} Product attribute vector of length 7
+ * @param {Object} prefs   - User preference object with selected category
+ * @returns {number[]} Product attribute vector of length 8
  */
-function buildProductVector(product) {
+function buildProductVector(product, prefs) {
+  const categoryWeight = prefs?.categoryWeight ?? 2.0;
+
   return [
     product.priceTier         / 5,  // Normalise 1-5 → 0.2 to 1.0
     product.batteryScore,           // Already [0, 1]
@@ -83,9 +88,11 @@ function buildProductVector(product) {
     product.connectivityScore,      // Already [0, 1]
     product.portabilityScore,       // Already [0, 1]
     product.valueTier,              // Already [0, 1]
+    product.category === prefs?.preferredCategory
+      ? categoryWeight
+      : 0,
   ];
 }
-
 
 // ══════════════════════════════════════════════════════════════════════════
 // SECTION 3: PER-ATTRIBUTE MATCH SCORES (for explainability panel)
@@ -141,7 +148,7 @@ function buildAttributeMatchScores(product, prefs) {
  * This function also attaches attributeScores (per-attribute match data)
  * to each product object so the RecommendationCard can display explanations.
  *
- * Time complexity: O(n × d) where n = number of products, d = 7 (attributes).
+ * Time complexity: O(n × d) where n = number of products, d = 8 (attributes).
  * For 50 products this is effectively O(1) and runs in < 5ms.
  *
  * @param {Object[]} products - Full product catalogue array from products.js
@@ -157,7 +164,7 @@ export function scoreProducts(products, prefs) {
     .map(product => ({
       ...product,  // Spread all original product fields
       // Attach the overall cosine similarity score
-      similarityScore: cosineSimilarity(prefVector, buildProductVector(product)),
+      similarityScore: cosineSimilarity(prefVector, buildProductVector(product, prefs)),
       // Flag whether this product matches the selected shopping category
       categoryMatch: prefs?.preferredCategory
         ? product.category === prefs.preferredCategory
@@ -184,19 +191,6 @@ export function scoreProducts(products, prefs) {
  * @param {Object}   prefs    - User preference object
  * @returns {Object[]} Reordered product list with preferred category products first
  */
-function prioritisePreferredCategory(products, prefs) {
-  if (!prefs?.preferredCategory) return products;
-
-  const preferred = prefs.preferredCategory;
-  return [...products].sort((a, b) => {
-    const aMatch = a.category === preferred ? 1 : 0;
-    const bMatch = b.category === preferred ? 1 : 0;
-    if (aMatch !== bMatch) return bMatch - aMatch;
-    return b.similarityScore - a.similarityScore;
-  });
-}
-
-
 // ══════════════════════════════════════════════════════════════════════════
 // SECTION 6: SCORE ALL PRODUCTS
 // ══════════════════════════════════════════════════════════════════════════
@@ -227,11 +221,16 @@ export function applyRules(scoredProducts, prefs) {
     // If the condition returns false, skip this rule entirely.
     if (!rule.condition(prefs)) return;
 
+    const values = typeof rule.action.values === 'function'
+      ? rule.action.values(prefs)
+      : rule.action.values;
+
     if (rule.action.type === 'boost') {
       // Multiply the similarityScore of any product whose target field
-      // matches one of the rule's values
+      // matches one of the rule's values.
+      if (!Array.isArray(values)) return;
       result = result.map(product =>
-        rule.action.values.includes(product[rule.action.target])
+        values.includes(product[rule.action.target])
           ? {
               ...product,
               // Cap the boosted score at 1.0 so we never exceed 100% match
@@ -255,22 +254,6 @@ export function applyRules(scoredProducts, prefs) {
 }
 
 
-/**
- * Public helper for final category prioritisation after rules are applied.
- */
-export function prioritisePreferredCategory(products, prefs) {
-  if (!prefs?.preferredCategory) return products;
-
-  const preferred = prefs.preferredCategory;
-  return [...products].sort((a, b) => {
-    const aMatch = a.category === preferred ? 1 : 0;
-    const bMatch = b.category === preferred ? 1 : 0;
-    if (aMatch !== bMatch) return bMatch - aMatch;
-    return b.similarityScore - a.similarityScore;
-  });
-}
-
-
 // ══════════════════════════════════════════════════════════════════════════
 // SECTION 6: MASTER RECOMMENDATION FUNCTION
 // ══════════════════════════════════════════════════════════════════════════
@@ -286,8 +269,7 @@ export function prioritisePreferredCategory(products, prefs) {
  * @returns {Object[]} Top N recommended products with scores and explanations
  */
 export function getTopRecommendations(products, prefs, n = 8) {
-  const scored      = scoreProducts(products, prefs);
-  const filtered    = applyRules(scored, prefs);
-  const prioritised = prioritisePreferredCategory(filtered, prefs);
-  return prioritised.slice(0, n);
+  const scored   = scoreProducts(products, prefs);
+  const filtered = applyRules(scored, prefs);
+  return filtered.slice(0, n);
 }

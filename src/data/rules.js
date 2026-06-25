@@ -1,5 +1,17 @@
 export const RULES = [
   {
+    id: 'R000',
+    priority: 0,
+    description: 'Boost products from user-selected brands',
+    condition: (p) => Array.isArray(p.preferredBrands) && p.preferredBrands.length > 0,
+    action: {
+      type: 'boost',
+      target: 'brand',
+      values: (prefs) => prefs.preferredBrands,
+      factor: 1.35,
+    },
+  },
+  {
     id: 'R001',
     priority: 1,
     description: 'Boost premium brands for high-budget users',
