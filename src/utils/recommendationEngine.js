@@ -78,7 +78,7 @@ export function cosineSimilarity(vecA, vecB) {
  * @returns {number[]} Product attribute vector of length 8
  */
 function buildProductVector(product, prefs) {
-  const categoryWeight = prefs?.categoryWeight ?? 2.0;
+  const categoryWeight = prefs?.categoryWeight ?? 3.0;
 
   return [
     product.priceTier         / 5,  // Normalise 1-5 → 0.2 to 1.0
@@ -249,7 +249,7 @@ export function applyRules(scoredProducts, prefs) {
     }
   });
 
-  // Re-sort after boosts may have changed the relative order of scores
+  // Re-sort after boosts may have changed the relative order of scores.
   return result.sort((a, b) => b.similarityScore - a.similarityScore);
 }
 

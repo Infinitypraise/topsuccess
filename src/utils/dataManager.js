@@ -96,7 +96,7 @@ export function buildPreferenceVector(prefs) {
     return value * weight;
   });
 
-  const categoryWeight = prefs?.categoryWeight ?? 2.0;
+  const categoryWeight = prefs?.categoryWeight ?? 3.0;
   const categoryMatch  = prefs?.preferredCategory ? categoryWeight : 0;
 
   return [...vector, categoryMatch];
