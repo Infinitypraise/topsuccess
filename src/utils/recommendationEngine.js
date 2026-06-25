@@ -158,6 +158,10 @@ export function scoreProducts(products, prefs) {
       ...product,  // Spread all original product fields
       // Attach the overall cosine similarity score
       similarityScore: cosineSimilarity(prefVector, buildProductVector(product)),
+      // Flag whether this product matches the selected shopping category
+      categoryMatch: prefs?.preferredCategory
+        ? product.category === prefs.preferredCategory
+        : false,
       // Attach per-attribute scores for the explainability panel
       attributeScores: buildAttributeMatchScores(product, prefs),
     }))
@@ -166,7 +170,35 @@ export function scoreProducts(products, prefs) {
 
 
 // ══════════════════════════════════════════════════════════════════════════
-// SECTION 5: RULE-BASED POST-FILTER
+// SECTION 5: CATEGORY PREFERENCE PRIORITISATION
+// ══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Reorders product candidates so that products matching the user's selected
+ * shopping category appear before all other categories.
+ *
+ * This ensures "What are you shopping for?" is treated as the strongest
+ * preference in the final recommendation list.
+ *
+ * @param {Object[]} products - Products that have already been scored and filtered
+ * @param {Object}   prefs    - User preference object
+ * @returns {Object[]} Reordered product list with preferred category products first
+ */
+function prioritisePreferredCategory(products, prefs) {
+  if (!prefs?.preferredCategory) return products;
+
+  const preferred = prefs.preferredCategory;
+  return [...products].sort((a, b) => {
+    const aMatch = a.category === preferred ? 1 : 0;
+    const bMatch = b.category === preferred ? 1 : 0;
+    if (aMatch !== bMatch) return bMatch - aMatch;
+    return b.similarityScore - a.similarityScore;
+  });
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// SECTION 6: SCORE ALL PRODUCTS
 // ══════════════════════════════════════════════════════════════════════════
 
 /**
@@ -223,6 +255,22 @@ export function applyRules(scoredProducts, prefs) {
 }
 
 
+/**
+ * Public helper for final category prioritisation after rules are applied.
+ */
+export function prioritisePreferredCategory(products, prefs) {
+  if (!prefs?.preferredCategory) return products;
+
+  const preferred = prefs.preferredCategory;
+  return [...products].sort((a, b) => {
+    const aMatch = a.category === preferred ? 1 : 0;
+    const bMatch = b.category === preferred ? 1 : 0;
+    if (aMatch !== bMatch) return bMatch - aMatch;
+    return b.similarityScore - a.similarityScore;
+  });
+}
+
+
 // ══════════════════════════════════════════════════════════════════════════
 // SECTION 6: MASTER RECOMMENDATION FUNCTION
 // ══════════════════════════════════════════════════════════════════════════
@@ -238,7 +286,8 @@ export function applyRules(scoredProducts, prefs) {
  * @returns {Object[]} Top N recommended products with scores and explanations
  */
 export function getTopRecommendations(products, prefs, n = 8) {
-  const scored   = scoreProducts(products, prefs);
-  const filtered = applyRules(scored, prefs);
-  return filtered.slice(0, n);
+  const scored      = scoreProducts(products, prefs);
+  const filtered    = applyRules(scored, prefs);
+  const prioritised = prioritisePreferredCategory(filtered, prefs);
+  return prioritised.slice(0, n);
 }
